@@ -33,6 +33,7 @@ class CowrieAnalyzer:
         self.userpass_cnt = defaultdict(int)
         self.ssh_times_cnt = defaultdict(int)
         self.telnet_times_cnt = defaultdict(int)
+        self.geoip_lookup = defaultdict(int)
 
     def plot(self):
         fig = plt.figure()
@@ -71,12 +72,11 @@ class CowrieAnalyzer:
                 self.src_ip_cnt[event['src_ip']] += 1
                 self.username_cnt[event['username']] += 1
                 self.pass_cnt[event['password']] += 1
-                credentials = event['username'] + ':' + event['password']
-                self.userpass_cnt[credentials] += 1
+                self.userpass_cnt[event['username'] + ':' + event['password']] += 1
 
         print('telnet attempts: ' + str(num_telnet))
         print('SSH attempts:' + str(num_ssh))
-        print('10 most common source addresses:')
+        print('most common source addresses:')
         for addr in sorted(self.src_ip_cnt.items(), key=operator.itemgetter(1), reverse=True)[:10]:
             print(addr)
         print('most common username attempts:')
@@ -90,6 +90,30 @@ class CowrieAnalyzer:
             print(creds)
 
         self.plot()
+        if os.path.isfile('GeoLite2-Country.mmdb'):
+            self.map_ips()
+
+    def map_ips(self):
+        geoip_overall = defaultdict(int)
+        import geoip2.database
+        reader = geoip2.database.Reader('GeoLite2-Country.mmdb')
+        for addr in sorted(self.src_ip_cnt.items(), key=operator.itemgetter(1), reverse=True):
+            response = reader.country(addr[0])
+            self.geoip_lookup[response.country.name] += 1  # or += addr[1]
+            geoip_overall[response.country.name] += addr[1]
+        print('unique source IPs:')
+        print(len(self.src_ip_cnt))
+        print('unique countries for source IPs:')
+        print(len(self.geoip_lookup))
+        print('most common countries for source IPs:')
+        for country in sorted(self.geoip_lookup.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+            print(country)
+        print('unique countries for overall attacks:')
+        print(len(geoip_overall))
+        print('most common countries for overall attacks:')
+        for country in sorted(geoip_overall.items(), key=operator.itemgetter(1), reverse=True)[:10]:
+            print(country)
+
 
 # run from the command line
 if __name__ == '__main__':
