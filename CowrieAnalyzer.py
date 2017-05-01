@@ -40,7 +40,7 @@ class CowrieAnalyzer:
         ax = fig.add_subplot(111)
         ax.set_xlabel('Time')
         ax.set_ylabel('Attack Attempts')
-        ax.set_title('Attack Attempts over Time')
+        ax.set_title('Attack Attempts per Day')
         dates, ssh_attempts = zip(*sorted(self.ssh_times_cnt.items()))
         ax.plot(dates, ssh_attempts, 'b-', label='SSH Attempts')
         dates, telnet_attempts = zip(*sorted(self.telnet_times_cnt.items()))
@@ -62,11 +62,11 @@ class CowrieAnalyzer:
             if 'cowrie.login' in event['eventid']:
                 if 'SSH' in event['system']:
                     num_ssh += 1
-                    time = bin_by_hours(parse(event['timestamp']), 4)
+                    time = bin_by_hours(parse(event['timestamp']), 24)
                     self.ssh_times_cnt[time] += 1
                 elif 'Telnet' in event['system']:
                     num_telnet += 1
-                    time = bin_by_hours(parse(event['timestamp']), 4)
+                    time = bin_by_hours(parse(event['timestamp']), 24)
                     self.telnet_times_cnt[time] += 1
 
                 self.src_ip_cnt[event['src_ip']] += 1
